@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { type Meta } from '@storybook/react';
 import {
   MaterialReactTable,
@@ -43,6 +44,7 @@ const columns: MRT_ColumnDef<(typeof data)[0]>[] = [
 ];
 
 const data = [...Array(5)].map(() => ({
+  id: faker.datatype.uuid(),
   firstName: faker.person.firstName(),
   lastName: faker.person.lastName(),
   age: faker.datatype.number(80),
@@ -313,42 +315,54 @@ export const ToolbarAlertBannerBottom = () => (
   />
 );
 
-export const ToolbarAlertBannerBottomWithActionsAlsoBottom = () => (
-  <MaterialReactTable
-    columns={columns}
-    data={data}
-    enableRowSelection
-    positionToolbarAlertBanner="bottom"
-    renderBottomToolbarCustomActions={({ table }) => {
-      const handleCreateNewUser = () => {
-        prompt('Create new user modal');
-      };
-      const handleRemoveUsers = () => {
-        confirm('Are you sure you want to remove the selected users?');
-      };
+export const ToolbarAlertBannerBottomWithActionsAlsoBottom = () => {
+  const [tabledata, setTabledata] = useState<any>(data);
+  
+  return (
+    <MaterialReactTable
+      columns={columns}
+      data={tabledata}
+      enableRowSelection
+      positionToolbarAlertBanner="bottom"
+      renderBottomToolbarCustomActions={({ table }) => {
+        const handleCreateNewUser = () => {
+          prompt('Create new user modal');
+        };
+        const handleRemoveUsers = () => {
+          const selectedIds = table.getSelectedRowModel().flatRows.map(row => row.original.id);
+          const selectedNames = table.getSelectedRowModel().flatRows.map(row => row.original.firstName).join(', ');
+          const allIds = data.map(row => row.id);
+          const updatedRows = allIds.filter(item => !selectedIds.includes(item));
+          if (confirm('You are about to remove the following users: ' + selectedNames)) {
+            setTabledata((r: any) => r.filter((x: any) => updatedRows.includes(x.id)));
+            table.toggleAllRowsSelected(false);
+          } 
+        };
 
-      return (
-        <div>
-          <Tooltip arrow title="Create New User">
-            <IconButton onClick={handleCreateNewUser}>
-              <AddBoxIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip arrow title="Remove Users">
-            <span>
-              <IconButton
-                disabled={table.getSelectedRowModel().flatRows.length === 0}
-                onClick={handleRemoveUsers}
-              >
-                <DeleteIcon />
+        return (
+          <div>
+            <Tooltip arrow title="Create New User">
+              <IconButton onClick={handleCreateNewUser}>
+                <AddBoxIcon />
               </IconButton>
-            </span>
-          </Tooltip>
-        </div>
-      );
-    }}
-  />
-);
+            </Tooltip>
+            <Tooltip arrow title="Remove Users">
+              <span>
+                <IconButton
+                  disabled={table.getSelectedRowModel().flatRows.length === 0}
+                  onClick={handleRemoveUsers}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </div>
+        );
+      }}
+    />
+  );
+  
+};
 
 export const renderCustomTopToolbar = () => (
   <MaterialReactTable
